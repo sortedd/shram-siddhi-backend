@@ -281,10 +281,29 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
-// Initialize database when module is loaded (for Vercel)
-initializeDatabase().catch(err => {
-    console.error('Database initialization error:', err);
-});
+// Start server
+const startServer = async () => {
+    try {
+        await initializeDatabase();
+        app.listen(PORT, () => {
+            console.log(`
+🚀 Server running on port ${PORT}
+👉 API URL: http://localhost:${PORT}
+👉 Frontend URL: ${FRONTEND_URL}
+            `);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
 
-// Export the app for Vercel serverless functions
+// Only start server if run directly (not imported)
+if (process.env.VERCEL !== '1' && require.main === module) {
+    startServer();
+} else if (process.env.VERCEL === '1') {
+    // In Vercel, initialize database on module load
+    initializeDatabase().catch(err => console.error('Database init error:', err));
+}
+
 module.exports = app;

@@ -2,14 +2,34 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/login.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/workers/get-all.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/workers/create.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/client-requests/create.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/contact/create.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/health",
-      "dest": "/api/health.js"
+      "src": "/",
+      "dest": "/api/index.js"
     },
     {
       "src": "/api/auth/login",
@@ -17,39 +37,19 @@
     },
     {
       "src": "/api/workers",
-      "dest": "/api/workers/index.js"
+      "dest": "/api/workers/get-all.js"
     },
     {
-      "src": "/api/workers/([^/]*)",
-      "dest": "/api/workers/[id].js"
+      "src": "/api/workers/create",
+      "dest": "/api/workers/create.js"
     },
     {
-      "src": "/api/workers/([^/]*)/status",
-      "dest": "/api/workers/[id]/status.js"
+      "src": "/api/client-requests/create",
+      "dest": "/api/client-requests/create.js"
     },
     {
-      "src": "/api/workers/([^/]*)/verification",
-      "dest": "/api/workers/[id]/verification.js"
-    },
-    {
-      "src": "/api/statistics",
-      "dest": "/api/statistics/index.js"
-    },
-    {
-      "src": "/api/analytics/(.*)",
-      "dest": "/api/analytics/[period].js"
-    },
-    {
-      "src": "/api/client-requests",
-      "dest": "/api/client-requests/index.js"
-    },
-    {
-      "src": "/api/client-requests/([^/]*)/status",
-      "dest": "/api/client-requests/[id]/status.js"
-    },
-    {
-      "src": "/api/contact",
-      "dest": "/api/contact.js"
+      "src": "/api/contact/create",
+      "dest": "/api/contact/create.js"
     }
   ],
   "env": {
