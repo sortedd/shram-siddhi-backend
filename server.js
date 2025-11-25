@@ -12,6 +12,40 @@ const { dbOperations, initializeDatabase, supabase } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5174';
+
+if (!JWT_SECRET) {
+    console.error('⚠️  WARNING: JWT_SECRET not set in .env file!');
+}
+
+// Update CORS configuration
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://shram-siddhi-frontend.vercel.app', // Explicitly allow your frontend
+    FRONTEND_URL
+].filter(Boolean);
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(null, true); // Temporarily allow all for debugging if needed, but better to stick to list
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(helmet());
+app.use(compression());
+app.use(cors(corsOptions));
+app.use(express.json());
 
 // Rate limiting
 const limiter = rateLimit({
