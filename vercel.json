@@ -8,6 +8,22 @@
     {
       "src": "api/auth/login.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/workers/get-all.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/workers/create.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/client-requests/create.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/contact/create.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -18,6 +34,22 @@
     {
       "src": "/api/auth/login",
       "dest": "/api/auth/login.js"
+    },
+    {
+      "src": "/api/workers",
+      "dest": "/api/workers/get-all.js"
+    },
+    {
+      "src": "/api/workers/create",
+      "dest": "/api/workers/create.js"
+    },
+    {
+      "src": "/api/client-requests/create",
+      "dest": "/api/client-requests/create.js"
+    },
+    {
+      "src": "/api/contact/create",
+      "dest": "/api/contact/create.js"
     }
   ],
   "env": {
