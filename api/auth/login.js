@@ -15,6 +15,20 @@ module.exports = async (req, res) => {
       return;
     }
     
+    // Parse body for POST requests
+    if (req.method === 'POST') {
+      // For serverless functions, we need to parse the body manually if it's a string
+      if (typeof req.body === 'string') {
+        try {
+          req.body = JSON.parse(req.body);
+        } catch (parseError) {
+          console.error('Body parsing error:', parseError);
+          res.status(400).json({ error: 'Invalid JSON in request body' });
+          return;
+        }
+      }
+    }
+    
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
       return;
