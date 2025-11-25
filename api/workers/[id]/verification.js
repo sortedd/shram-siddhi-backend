@@ -1,4 +1,4 @@
-const app = require('../../server');
+const app = require('../../../server');
 
 module.exports = async (req, res) => {
   // Create a mock request and response to pass to our Express route handler
