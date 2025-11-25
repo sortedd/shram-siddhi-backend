@@ -2,54 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/health",
-      "dest": "/api/health.js"
-    },
-    {
-      "src": "/api/auth/login",
-      "dest": "/api/auth/login.js"
-    },
-    {
-      "src": "/api/workers",
-      "dest": "/api/workers/index.js"
-    },
-    {
-      "src": "/api/workers/([^/]*)",
-      "dest": "/api/workers/[id].js"
-    },
-    {
-      "src": "/api/workers/([^/]*)/status",
-      "dest": "/api/workers/[id]/status.js"
-    },
-    {
-      "src": "/api/workers/([^/]*)/verification",
-      "dest": "/api/workers/[id]/verification.js"
-    },
-    {
-      "src": "/api/statistics",
-      "dest": "/api/statistics/index.js"
-    },
-    {
-      "src": "/api/analytics/(.*)",
-      "dest": "/api/analytics/[period].js"
-    },
-    {
-      "src": "/api/client-requests",
-      "dest": "/api/client-requests/index.js"
-    },
-    {
-      "src": "/api/client-requests/([^/]*)/status",
-      "dest": "/api/client-requests/[id]/status.js"
-    },
-    {
-      "src": "/api/contact",
-      "dest": "/api/contact.js"
+      "src": "/(.*)",
+      "dest": "/server.js"
     }
   ],
   "env": {
