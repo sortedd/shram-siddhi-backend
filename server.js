@@ -12,30 +12,6 @@ const { dbOperations, initializeDatabase, supabase } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5174';
-
-if (!JWT_SECRET) {
-    console.error('⚠️  WARNING: JWT_SECRET not set in .env file!');
-}
-
-// Update CORS configuration to be more flexible for production
-const corsOptions = {
-    origin: [FRONTEND_URL, 'http://localhost:5174', 'https://your-vercel-app.vercel.app'],
-    credentials: true,
-    optionsSuccessStatus: 200
-};
-
-// Add a fallback for FRONTEND_URL in CORS if not set
-if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
-    corsOptions.origin = [FRONTEND_URL, 'https://your-vercel-app.vercel.app'];
-} else if (process.env.NODE_ENV === 'production') {
-    corsOptions.origin = ['https://your-vercel-app.vercel.app'];
-}
-
-app.use(helmet());
-app.use(compression());
-app.use(cors(corsOptions));
-app.use(express.json());
 
 // Rate limiting
 const limiter = rateLimit({
