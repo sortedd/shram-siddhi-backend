@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/auth.js",
+      "src": "api/auth/login.js",
       "use": "@vercel/node"
     }
   ],
@@ -16,12 +16,8 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/api/health",
-      "dest": "/api/index.js"
-    },
-    {
       "src": "/api/auth/login",
-      "dest": "/api/auth.js"
+      "dest": "/api/auth/login.js"
     }
   ],
   "env": {

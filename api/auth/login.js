@@ -39,14 +39,14 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'fallback_secret_for_development_only',
       { expiresIn: '24h' }
     );
 
     res.status(200).json({
+      message: 'Login successful',
       token,
       user: {
         id: user.id,
