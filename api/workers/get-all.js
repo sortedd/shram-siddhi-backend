@@ -1,7 +1,10 @@
-const { dbOperations } = require('../../database');
+const { dbOperations, initializeDatabase } = require('../../database');
 
 module.exports = async (req, res) => {
   try {
+    // Initialize database connection
+    await initializeDatabase();
+    
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
