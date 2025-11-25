@@ -1,0 +1,287 @@
+const express = require('express');
+const serverless = require('serverless-http');
+const { dbOperations, initializeDatabase } = require('../database');
+
+// Import all the middleware and configurations from the main server
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const compression = require('compression');
+
+const app = express();
+
+// Initialize database
+initializeDatabase().catch(err => console.error('Database init error:', err));
+
+// Environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5174';
+
+// Middleware
+app.use(helmet());
+app.use(compression());
+app.use(express.json());
+
+// CORS configuration
+const corsOptions = {
+    origin: [FRONTEND_URL, 'http://localhost:5174', 'https://your-vercel-frontend.vercel.app'],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+// Add a fallback for FRONTEND_URL in CORS if not set
+if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+    corsOptions.origin = [FRONTEND_URL, 'https://your-vercel-frontend.vercel.app'];
+} else if (process.env.NODE_ENV === 'production') {
+    corsOptions.origin = ['https://your-vercel-frontend.vercel.app'];
+}
+
+app.use(cors(corsOptions));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Too many requests from this IP, please try again later'
+});
+app.use('/api/', limiter);
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: 'Too many login attempts, please try again later'
+});
+app.use('/api/auth/login', authLimiter);
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Routes
+app.get('/', (req, res) => {
+    res.send(\
+        <div style='font-family: sans-serif; text-align: center; padding: 50px;'>
+            <h1> Shram Siddhi API is Running</h1>
+            <p>This is the backend server. It provides data to the frontend application.</p>
+            <p>To view the application, visit: <a href='\'>\</a></p>
+            <p>Health Check: <a href='/api/health'>/api/health</a></p>
+        </div>
+    \);
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Shram Siddhi API is running' });
+});
+
+// Authentication routes
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        const user = await dbOperations.users.findByEmail(email);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Worker routes
+app.get('/api/workers', authenticateToken, async (req, res) => {
+    try {
+        const workers = await dbOperations.workers.getAll();
+        res.json(workers);
+    } catch (error) {
+        console.error('Get workers error:', error);
+        res.status(500).json({ error: 'Failed to fetch workers' });
+    }
+});
+
+app.get('/api/workers/:id', authenticateToken, async (req, res) => {
+    try {
+        const worker = await dbOperations.workers.getById(req.params.id);
+        if (!worker) {
+            return res.status(404).json({ error: 'Worker not found' });
+        }
+        res.json(worker);
+    } catch (error) {
+        console.error('Get worker error:', error);
+        res.status(500).json({ error: 'Failed to fetch worker' });
+    }
+});
+
+app.post('/api/workers', async (req, res) => {
+    try {
+        const result = await dbOperations.workers.create(req.body);
+        res.status(201).json(result);
+    } catch (error) {
+        console.error('Create worker error:', error);
+        if (error.code === '23505') {
+            res.status(400).json({ error: 'Aadhaar number already exists' });
+        } else {
+            res.status(500).json({ error: 'Failed to create worker' });
+        }
+    }
+});
+
+app.put('/api/workers/:id/status', authenticateToken, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const result = await dbOperations.workers.updateStatus(req.params.id, status);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Worker not found' });
+        }
+
+        res.json({ message: 'Worker status updated successfully' });
+    } catch (error) {
+        console.error('Update worker status error:', error);
+        res.status(500).json({ error: 'Failed to update worker status' });
+    }
+});
+
+app.put('/api/workers/:id/verification', authenticateToken, async (req, res) => {
+    try {
+        const { verified } = req.body;
+        const result = await dbOperations.workers.updateVerification(req.params.id, verified);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Worker not found' });
+        }
+
+        res.json({ message: 'Worker verification updated successfully' });
+    } catch (error) {
+        console.error('Update worker verification error:', error);
+        res.status(500).json({ error: 'Failed to update worker verification' });
+    }
+});
+
+// Statistics routes
+app.get('/api/statistics', authenticateToken, async (req, res) => {
+    try {
+        const stats = await dbOperations.workers.getStatistics();
+        res.json(stats);
+    } catch (error) {
+        console.error('Get statistics error:', error);
+        res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+});
+
+app.get('/api/analytics/:period', authenticateToken, async (req, res) => {
+    try {
+        const { period } = req.params;
+        const analytics = await dbOperations.workers.getAnalytics(period);
+        res.json(analytics);
+    } catch (error) {
+        console.error('Get analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+});
+
+// Client request routes
+app.get('/api/client-requests', authenticateToken, async (req, res) => {
+    try {
+        const requests = await dbOperations.clientRequests.getAll();
+        res.json(requests);
+    } catch (error) {
+        console.error('Get client requests error:', error);
+        res.status(500).json({ error: 'Failed to fetch client requests' });
+    }
+});
+
+app.post('/api/client-requests', async (req, res) => {
+    try {
+        const result = await dbOperations.clientRequests.create(req.body);
+        res.status(201).json({
+            id: result.lastInsertRowid,
+            message: 'Client request submitted successfully'
+        });
+    } catch (error) {
+        console.error('Create client request error:', error);
+        res.status(500).json({ error: 'Failed to submit client request' });
+    }
+});
+
+app.put('/api/client-requests/:id/status', authenticateToken, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const result = await dbOperations.clientRequests.updateStatus(req.params.id, status);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Client request not found' });
+        }
+
+        res.json({ message: 'Client request status updated successfully' });
+    } catch (error) {
+        console.error('Update client request status error:', error);
+        res.status(500).json({ error: 'Failed to update client request status' });
+    }
+});
+
+// Contact Us route
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, subject, message } = req.body;
+
+        // Validate input
+        if (!name || !email || !message) {
+            return res.status(400).json({ error: 'Name, email, and message are required' });
+        }
+
+        // In a real application, you would save this to the database or send an email
+        // For now, we'll just log it and return success
+        console.log('Contact form submission:', { name, email, subject, message });
+
+        res.status(200).json({ message: 'Message sent successfully' });
+    } catch (error) {
+        console.error('Contact form error:', error);
+        res.status(500).json({ error: 'Failed to send message' });
+    }
+});
+
+// Export the app for Vercel serverless functions
+module.exports = app;
+module.exports.handler = serverless(app);
