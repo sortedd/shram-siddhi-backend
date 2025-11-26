@@ -342,6 +342,7 @@ app.get('/api/admin/table/:tableName', authenticateToken, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    await initializeDatabase();
 });
