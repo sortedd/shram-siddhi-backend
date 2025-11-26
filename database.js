@@ -275,6 +275,52 @@ const dbOperations = {
       if (error) throw error;
       return data;
     }
+  },
+
+  // Admin operations
+  admin: {
+    getTables: async () => {
+      return [
+        { name: 'workers' },
+        { name: 'client_requests' },
+        { name: 'contact_messages' },
+        { name: 'franchise_applications' },
+        { name: 'users' }
+      ];
+    },
+
+    getStats: async () => {
+      const tables = ['workers', 'client_requests', 'contact_messages', 'franchise_applications', 'users'];
+      const stats = {};
+
+      for (const table of tables) {
+        const { count, error } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true });
+
+        if (!error) {
+          stats[table] = count;
+        }
+      }
+
+      return stats;
+    },
+
+    getTableData: async (tableName, limit = 50, offset = 0) => {
+      const allowedTables = ['workers', 'client_requests', 'contact_messages', 'franchise_applications', 'users'];
+      if (!allowedTables.includes(tableName)) {
+        throw new Error('Invalid table name');
+      }
+
+      const { data, error, count } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact' })
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data, total: count };
+    }
   }
 };
 

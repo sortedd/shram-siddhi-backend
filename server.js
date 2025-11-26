@@ -291,6 +291,39 @@ app.post('/api/franchise', async (req, res) => {
     }
 });
 
+// Admin Routes (Database Viewer)
+app.get('/api/admin/tables', authenticateToken, async (req, res) => {
+    try {
+        const tables = await dbOperations.admin.getTables();
+        res.json(tables);
+    } catch (error) {
+        console.error('Get tables error:', error);
+        res.status(500).json({ error: 'Failed to fetch tables' });
+    }
+});
+
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+    try {
+        const stats = await dbOperations.admin.getStats();
+        res.json(stats);
+    } catch (error) {
+        console.error('Get admin stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch admin stats' });
+    }
+});
+
+app.get('/api/admin/table/:tableName', authenticateToken, async (req, res) => {
+    try {
+        const { tableName } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
+        const result = await dbOperations.admin.getTableData(tableName, parseInt(limit), parseInt(offset));
+        res.json(result);
+    } catch (error) {
+        console.error('Get table data error:', error);
+        res.status(500).json({ error: 'Failed to fetch table data' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
