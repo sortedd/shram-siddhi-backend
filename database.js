@@ -9,8 +9,6 @@ const supabaseKey = process.env.SUPABASE_KEY;
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase credentials in .env file');
   console.error('Please add SUPABASE_URL and SUPABASE_KEY to your .env file');
-  // We don't exit here to allow the server to start and show the error, 
-  // but DB operations will fail.
 }
 
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
@@ -152,8 +150,6 @@ const dbOperations = {
     },
 
     getStatistics: async () => {
-      // This is less efficient in Supabase than SQL count, but simpler to port
-      // For production, use RPC calls or separate count queries
       const { count: total } = await supabase.from('workers').select('*', { count: 'exact', head: true });
       const { count: active } = await supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'active');
       const { count: pending } = await supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'pending');
@@ -172,9 +168,6 @@ const dbOperations = {
     },
 
     getAnalytics: async (period = 'daily') => {
-      // For complex analytics, it's best to create a Database View or RPC in Supabase
-      // For now, we'll return a simplified placeholder or fetch raw data and aggregate in JS (not recommended for large data)
-      // Returning empty array to prevent crash, recommending RPC for real implementation
       console.warn('Analytics aggregation should be moved to Supabase RPC');
       return [];
     }
@@ -203,13 +196,14 @@ const dbOperations = {
           location: requestData.location,
           description: requestData.description,
           budget: requestData.budget,
-          urgency: requestData.urgency
+          urgency: requestData.urgency,
+          status: 'Pending'
         }])
         .select()
         .single();
 
       if (error) throw error;
-      return { lastInsertRowid: data.id }; // Maintain compatibility with controller
+      return { lastInsertRowid: data.id };
     },
 
     updateStatus: async (id, status) => {
@@ -225,15 +219,16 @@ const dbOperations = {
   },
 
   // Contact messages operations
-  contactMessages: {
-    create: async (messageData) => {
+  contactRequests: {
+    create: async (contactData) => {
       const { data, error } = await supabase
         .from('contact_messages')
         .insert([{
-          name: messageData.name,
-          email: messageData.email,
-          phone: messageData.phone,
-          message: messageData.message
+          name: contactData.name,
+          email: contactData.email,
+          phone: contactData.phone,
+          message: contactData.message,
+          status: 'New'
         }])
         .select()
         .single();
@@ -251,14 +246,41 @@ const dbOperations = {
       if (error) throw error;
       return data;
     }
+  },
+
+  // Franchise Application operations
+  franchiseApplications: {
+    create: async (applicationData) => {
+      const { data, error } = await supabase
+        .from('franchise_applications')
+        .insert([{
+          full_name: applicationData.fullName,
+          applicant_type: applicationData.applicantType,
+          mobile_number: applicationData.mobileNumber,
+          email: applicationData.emailAddress,
+          aadhar_number: applicationData.aadharNumber,
+          address: applicationData.address,
+          district: applicationData.district,
+          city: applicationData.nearestCity,
+          center_location_type: applicationData.centerLocationType,
+          space_available: applicationData.totalSpaceAvailable,
+          computer_system: applicationData.computerSystem,
+          internet_available: applicationData.wifiAvailable,
+          status: 'Pending',
+          application_data: applicationData // Store full JSON as backup
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
   }
 };
 
 // Initialize database
 const initializeDatabase = async () => {
   try {
-    // In Supabase, tables are created via SQL Editor or Migrations, not here.
-    // We just check connection and init default user.
     await initializeDefaultUser();
     console.log('Database connection initialized');
   } catch (error) {

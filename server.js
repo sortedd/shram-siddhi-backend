@@ -269,6 +269,28 @@ app.put('/api/client-requests/:id/status', authenticateToken, async (req, res) =
     }
 });
 
+// Contact Us route
+app.post('/api/contact', async (req, res) => {
+    try {
+        const result = await dbOperations.contactRequests.create(req.body);
+        res.status(201).json(result);
+    } catch (error) {
+        console.error('Create contact request error:', error);
+        res.status(500).json({ error: 'Failed to submit contact request' });
+    }
+});
+
+// Franchise Application route
+app.post('/api/franchise', async (req, res) => {
+    try {
+        const result = await dbOperations.franchiseApplications.create(req.body);
+        res.status(201).json(result);
+    } catch (error) {
+        console.error('Create franchise application error:', error);
+        res.status(500).json({ error: 'Failed to submit franchise application' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
