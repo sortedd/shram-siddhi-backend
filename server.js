@@ -12,16 +12,35 @@ const { dbOperations, initializeDatabase, supabase } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development_only';
-if (!origin) return callback(null, true);
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5174';
 
-if (allowedOrigins.indexOf(origin) !== -1) {
-    callback(null, true);
-} else {
-    console.log('Blocked by CORS:', origin);
-    callback(null, true); // Temporarily allow all for debugging if needed, but better to stick to list
+if (!JWT_SECRET) {
+    console.error('⚠️  WARNING: JWT_SECRET not set in .env file!');
 }
+
+// Update CORS configuration
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://shram-siddhi-frontend.vercel.app',
+    'https://www.shramsiddhi.com',
+    'https://shramsiddhi.com',
+    FRONTEND_URL
+].filter(Boolean);
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(null, true); // Temporarily allow all for debugging if needed, but better to stick to list
+        }
     },
-credentials: true,
+    credentials: true,
     optionsSuccessStatus: 200
 };
 
@@ -227,13 +246,10 @@ app.get('/api/client-requests', authenticateToken, async (req, res) => {
 app.post('/api/client-requests', async (req, res) => {
     try {
         const result = await dbOperations.clientRequests.create(req.body);
-        res.status(201).json({
-            id: result.lastInsertRowid,
-            message: 'Client request submitted successfully'
-        });
+        res.status(201).json(result);
     } catch (error) {
         console.error('Create client request error:', error);
-        res.status(500).json({ error: 'Failed to submit client request' });
+        res.status(500).json({ error: 'Failed to create client request' });
     }
 });
 
@@ -243,41 +259,16 @@ app.put('/api/client-requests/:id/status', authenticateToken, async (req, res) =
         const result = await dbOperations.clientRequests.updateStatus(req.params.id, status);
 
         if (result.changes === 0) {
-            return res.status(404).json({ error: 'Client request not found' });
+            return res.status(404).json({ error: 'Request not found' });
         }
 
-        res.json({ message: 'Client request status updated successfully' });
+        res.json({ message: 'Request status updated successfully' });
     } catch (error) {
         console.error('Update client request status error:', error);
-        res.status(500).json({ error: 'Failed to update client request status' });
+        res.status(500).json({ error: 'Failed to update request status' });
     }
 });
 
-// Contact Us route
-app.post('/api/contact', async (req, res) => {
-    try {
-        const { name, email, subject, message } = req.body;
-
-        // Validate input
-        if (!name || !email || !message) {
-            return res.status(400).json({ error: 'Name, email, and message are required' });
-        }
-
-        // In a real application, you would save this to the database or send an email
-        // For now, we'll just log it and return success
-        console.log('Contact form submission:', { name, email, subject, message });
-
-        res.status(200).json({ message: 'Message sent successfully' });
-    } catch (error) {
-        console.error('Contact form error:', error);
-        res.status(500).json({ error: 'Failed to send message' });
-    }
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
-
-// Initialize database when module is loaded (for Vercel)
-initializeDatabase().catch(err => {
-    console.error('Database initialization error:', err);
-});
-
-// Export the app for Vercel serverless functions
-module.exports = app;
