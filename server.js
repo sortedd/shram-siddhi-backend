@@ -33,11 +33,14 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // Check if origin is in allowed list OR is a Vercel preview URL
+        const isAllowed = allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app');
+
+        if (isAllowed) {
             callback(null, true);
         } else {
             console.log('Blocked by CORS:', origin);
-            callback(null, true); // Temporarily allow all for debugging if needed, but better to stick to list
+            callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
@@ -49,18 +52,33 @@ app.use(compression());
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Rate limiting
+// Trust proxy (required for Vercel/behind reverse proxy)
+app.set('trust proxy', 1);
+
+// Rate limiting with proxy support
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: 'Too many requests from this IP, please try again later'
+    message: 'Too many requests from this IP, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Use forwarded headers from Vercel
+    keyGenerator: (req) => {
+        return req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+    }
 });
 app.use('/api/', limiter);
 
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 10,
-    message: 'Too many login attempts, please try again later'
+    message: 'Too many login attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Use forwarded headers from Vercel
+    keyGenerator: (req) => {
+        return req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+    }
 });
 app.use('/api/auth/login', authLimiter);
 
