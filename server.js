@@ -50,7 +50,7 @@ const corsOptions = {
 app.use(helmet());
 app.use(compression());
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Trust proxy (required for Vercel/behind reverse proxy)
 app.set('trust proxy', 1);
