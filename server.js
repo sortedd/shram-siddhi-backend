@@ -262,13 +262,26 @@ app.get('/api/client-requests', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/client-requests', async (req, res) => {
-    try {
-        const result = await dbOperations.clientRequests.create(req.body);
-        res.status(201).json(result);
-    } catch (error) {
-        console.error('Create client request error:', error);
-        res.status(500).json({ error: 'Failed to create client request' });
+  try {
+    // Validate request body
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is required' });
     }
+    
+    const result = await dbOperations.clientRequests.create(req.body);
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Create client request error:', error);
+    // Provide more specific error messages
+    if (error.code === '22P02') {
+      res.status(400).json({ 
+        error: 'Invalid data format provided', 
+        details: 'Please check that all fields have valid data types' 
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to create client request' });
+    }
+  }
 });
 
 app.put('/api/client-requests/:id/status', authenticateToken, async (req, res) => {
