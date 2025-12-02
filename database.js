@@ -189,12 +189,12 @@ const dbOperations = {
       const { data, error } = await supabase
         .from('client_requests')
         .insert([{
-          client_name: requestData.clientName,
-          client_phone: requestData.clientPhone,
-          client_email: requestData.clientEmail,
-          service_type: requestData.serviceType,
-          location: requestData.location,
-          description: requestData.description,
+          client_name: requestData.companyName,
+          client_phone: requestData.mobile,
+          client_email: requestData.email,
+          service_type: requestData.projectType,
+          location: requestData.projectLocation,
+          description: requestData.projectDescription,
           budget: requestData.budget,
           urgency: requestData.urgency,
           status: 'Pending'
