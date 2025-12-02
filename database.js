@@ -98,55 +98,33 @@ const dbOperations = {
     },
 
     create: async (workerData) => {
-      try {
-        // Validate and sanitize input data
-        const sanitizedData = {
-          full_name: workerData.fullName || '',
-          age: workerData.age ? parseInt(workerData.age) : 0,
-          gender: workerData.gender || '',
-          aadhaar_number: workerData.aadhaarNumber || '',
-          mobile_number: workerData.mobileNumber || '',
-          address: workerData.address || '',
-          city: workerData.city || '',
-          state: workerData.state || '',
-          pincode: workerData.pincode || '',
-          district: workerData.district || '',
-          primary_skill: workerData.skillType || '',
-          experience: workerData.experience || '',
-          daily_wage: workerData.dailyWage ? parseFloat(workerData.dailyWage) : 0,
-          availability: workerData.availability || '',
-          additional_skills: workerData.additionalSkills || '',
-          latitude: workerData.location?.latitude ? parseFloat(workerData.location.latitude) : null,
-          longitude: workerData.location?.longitude ? parseFloat(workerData.location.longitude) : null,
-          photo_url: workerData.photo || ''
-        };
+      const { data, error } = await supabase
+        .from('workers')
+        .insert([{
+          full_name: workerData.fullName,
+          age: workerData.age,
+          gender: workerData.gender,
+          aadhaar_number: workerData.aadhaarNumber,
+          mobile_number: workerData.mobileNumber,
+          address: workerData.address,
+          city: workerData.city,
+          state: workerData.state,
+          pincode: workerData.pincode,
+          district: workerData.district,
+          primary_skill: workerData.skillType,
+          experience: workerData.experience,
+          daily_wage: workerData.dailyWage,
+          availability: workerData.availability,
+          additional_skills: workerData.additionalSkills,
+          latitude: workerData.location?.latitude,
+          longitude: workerData.location?.longitude,
+          photo_url: workerData.photo
+        }])
+        .select()
+        .single();
 
-        // Ensure numeric fields are valid numbers
-        if (isNaN(sanitizedData.age)) {
-          sanitizedData.age = 0;
-        }
-        if (isNaN(sanitizedData.daily_wage)) {
-          sanitizedData.daily_wage = 0;
-        }
-        if (isNaN(sanitizedData.latitude)) {
-          sanitizedData.latitude = null;
-        }
-        if (isNaN(sanitizedData.longitude)) {
-          sanitizedData.longitude = null;
-        }
-
-        const { data, error } = await supabase
-          .from('workers')
-          .insert([sanitizedData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Database error in workers.create:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
 
     updateStatus: async (id, status) => {
@@ -208,37 +186,24 @@ const dbOperations = {
     },
 
     create: async (requestData) => {
-      try {
-        // Validate and sanitize input data
-        const sanitizedData = {
-          client_name: requestData.clientName || '',
-          client_phone: requestData.clientPhone || '',
-          client_email: requestData.clientEmail || '',
-          service_type: requestData.serviceType || '',
-          location: requestData.location || '',
-          description: requestData.description || '',
-          budget: requestData.budget ? parseFloat(requestData.budget) : 0,
-          urgency: requestData.urgency || 'normal',
+      const { data, error } = await supabase
+        .from('client_requests')
+        .insert([{
+          client_name: requestData.clientName,
+          client_phone: requestData.clientPhone,
+          client_email: requestData.clientEmail,
+          service_type: requestData.serviceType,
+          location: requestData.location,
+          description: requestData.description,
+          budget: requestData.budget,
+          urgency: requestData.urgency,
           status: 'Pending'
-        };
+        }])
+        .select()
+        .single();
 
-        // Ensure budget is a valid number
-        if (isNaN(sanitizedData.budget)) {
-          sanitizedData.budget = 0;
-        }
-
-        const { data, error } = await supabase
-          .from('client_requests')
-          .insert([sanitizedData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return { lastInsertRowid: data.id };
-      } catch (error) {
-        console.error('Database error in clientRequests.create:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return { lastInsertRowid: data.id };
     },
 
     updateStatus: async (id, status) => {
@@ -256,28 +221,20 @@ const dbOperations = {
   // Contact messages operations
   contactRequests: {
     create: async (contactData) => {
-      try {
-        // Validate and sanitize input data
-        const sanitizedData = {
-          name: contactData.name || '',
-          email: contactData.email || '',
-          phone: contactData.phone || '',
-          message: contactData.message || '',
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .insert([{
+          name: contactData.name,
+          email: contactData.email,
+          phone: contactData.phone,
+          message: contactData.message,
           status: 'New'
-        };
+        }])
+        .select()
+        .single();
 
-        const { data, error } = await supabase
-          .from('contact_messages')
-          .insert([sanitizedData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Database error in contactRequests.create:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
 
     getAll: async () => {
@@ -294,42 +251,29 @@ const dbOperations = {
   // Franchise Application operations
   franchiseApplications: {
     create: async (applicationData) => {
-      try {
-        // Validate and sanitize input data
-        const sanitizedData = {
-          full_name: applicationData.fullName || '',
-          applicant_type: applicationData.applicantType || '',
-          mobile_number: applicationData.mobileNumber || '',
-          email: applicationData.emailAddress || '',
-          aadhar_number: applicationData.aadharNumber || '',
-          address: applicationData.address || '',
-          district: applicationData.district || '',
-          city: applicationData.nearestCity || '',
-          center_location_type: applicationData.centerLocationType || '',
-          space_available: applicationData.totalSpaceAvailable ? parseFloat(applicationData.totalSpaceAvailable) : 0,
-          computer_system: applicationData.computerSystem || false,
-          internet_available: applicationData.wifiAvailable || false,
+      const { data, error } = await supabase
+        .from('franchise_applications')
+        .insert([{
+          full_name: applicationData.fullName,
+          applicant_type: applicationData.applicantType,
+          mobile_number: applicationData.mobileNumber,
+          email: applicationData.emailAddress,
+          aadhar_number: applicationData.aadharNumber,
+          address: applicationData.address,
+          district: applicationData.district,
+          city: applicationData.nearestCity,
+          center_location_type: applicationData.centerLocationType,
+          space_available: applicationData.totalSpaceAvailable,
+          computer_system: applicationData.computerSystem,
+          internet_available: applicationData.wifiAvailable,
           status: 'Pending',
           application_data: applicationData // Store full JSON as backup
-        };
+        }])
+        .select()
+        .single();
 
-        // Ensure space_available is a valid number
-        if (isNaN(sanitizedData.space_available)) {
-          sanitizedData.space_available = 0;
-        }
-
-        const { data, error } = await supabase
-          .from('franchise_applications')
-          .insert([sanitizedData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Database error in franchiseApplications.create:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     }
   },
 
